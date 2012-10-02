@@ -1311,7 +1311,7 @@ do_standby_promote(void)
 	log_info(_("%s: Marking recovery done\n"), progname);
 	maxlen_snprintf(recovery_file_path, "%s/%s", data_dir, RECOVERY_FILE);
 	maxlen_snprintf(recovery_done_path, "%s/%s", data_dir, RECOVERY_DONE_FILE);
-	rename(recovery_file_path, recovery_done_path);
+	// rename(recovery_file_path, recovery_done_path);
 
 	log_notice(_("%s: creating trigger file\n"), progname);
 	if (!create_trigger_file(options.trigger_file)) {
