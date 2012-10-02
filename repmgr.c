@@ -54,6 +54,7 @@
 #define CLUSTER_CLEANUP  8
 
 static bool create_recovery_file(const char *data_dir, const char *trigger_file);
+static bool create_trigger_file(const char *trigger_file_path);
 static int test_ssh_connection(char *host, char *remote_user);
 static int	copy_remote_files(char *host, char *remote_user, char *remote_path,
                              char *local_path, bool is_directory);
@@ -1318,13 +1319,17 @@ do_standby_promote(void)
 	 * find an active server rather than one starting up.  This may
 	 * hang for up the default timeout (60 seconds).
 	 */
-	log_notice(_("%s: restarting server using pg_ctl\n"), progname);
+	/*log_notice(_("%s: restarting server using pg_ctl\n"), progname);
 	maxlen_snprintf(script, "pg_ctl -D %s -w -m fast restart", data_dir);
 	r = system(script);
 	if (r != 0)
 	{
 		log_err(_("Can't restart PostgreSQL server\n"));
 		exit(ERR_NO_RESTART);
+	}*/
+	log_notice(_("%s: creating trigger file\n"), progname);
+	if (!create_recovery_file(data_dir, options.trigger_file)) {
+		exit(ERR_BAD_CONFIG);
 	}
 
 	/* reconnect to check we got promoted */
@@ -1766,6 +1771,23 @@ create_recovery_file(const char *data_dir, const char *trigger_file)
 
 	/*FreeFile(recovery_file);*/
 	fclose(recovery_file);
+
+	return true;
+}
+
+static bool
+create_trigger_file(const char *trigger_file_path)
+{
+	FILE		*trigger_file;
+
+	trigger_file = fopen(trigger_file_path, "w");
+	if (recovery_file == NULL)
+	{
+		log_err(_("could not create trigger file, it could be necessary to create it manually\n"));
+		return false;
+	}
+
+	fclose(trigger_file);
 
 	return true;
 }
