@@ -86,8 +86,8 @@ bool need_a_node = true;
 bool require_password = false;
 
 /* Initialization of runtime options */
-t_runtime_options runtime_options = { "", "", "", "", "", "", DEFAULT_WAL_KEEP_SEGMENTS, false, false, false, "", "", 0 };
-t_configuration_options options = { "", -1, "", MANUAL_FAILOVER, -1, "", "", "", "", "", "", -1 };
+t_runtime_options runtime_options = { "", "", "", "", "", "", "", DEFAULT_WAL_KEEP_SEGMENTS, false, false, false, "", "", 0 };
+t_configuration_options options = { "", -1, "", MANUAL_FAILOVER, -1, "", "", "", "", "", "", "", "", "", 3, 3, -1 };
 
 static char		*server_mode = NULL;
 static char		*server_cmd = NULL;
@@ -107,7 +107,7 @@ main(int argc, char **argv)
 		{"config-file", required_argument, NULL, 'f'},
 		{"remote-user", required_argument, NULL, 'R'},
 		{"wal-keep-segments", required_argument, NULL, 'w'},
-        {"keep-history", required_argument, NULL, 'k'},
+                {"keep-history", required_argument, NULL, 'k'},
 		{"force", no_argument, NULL, 'F'},
 		{"ignore-rsync-warning", no_argument, NULL, 'I'},
 		{"verbose", no_argument, NULL, 'v'},
@@ -153,9 +153,9 @@ main(int argc, char **argv)
 		case 'U':
 			strncpy(runtime_options.username, optarg, MAXLEN);
 			break;
-		case 'C':
-			strncpy(runtime_options.config_dir, optarg, MAXFILENAME);
-			break;
+//		case 'C':
+//			strncpy(runtime_options.config_dir, optarg, MAXFILENAME);
+//			break;
 		case 'D':
 			strncpy(runtime_options.dest_dir, optarg, MAXFILENAME);
 			break;
@@ -1245,12 +1245,12 @@ do_standby_promote(void)
 	PGconn		*conn;
 	PGresult	*res;
 	char 		sqlquery[QUERY_STR_LEN];
-	char		script[MAXLEN];
+//	char		script[MAXLEN];
 
 	PGconn		*old_master_conn;
 	int			old_master_id;
 
-	int			r;
+//	int			r;
 	char		data_dir[MAXLEN];
 	char		recovery_file_path[MAXFILENAME];
 	char		recovery_done_path[MAXFILENAME];
@@ -1313,22 +1313,8 @@ do_standby_promote(void)
 	maxlen_snprintf(recovery_done_path, "%s/%s", data_dir, RECOVERY_DONE_FILE);
 	rename(recovery_file_path, recovery_done_path);
 
-	/*
-	 * We assume the pg_ctl script is in the PATH.  Restart and wait for
-	 * the server to finish starting, so that the check below will
-	 * find an active server rather than one starting up.  This may
-	 * hang for up the default timeout (60 seconds).
-	 */
-	/*log_notice(_("%s: restarting server using pg_ctl\n"), progname);
-	maxlen_snprintf(script, "pg_ctl -D %s -w -m fast restart", data_dir);
-	r = system(script);
-	if (r != 0)
-	{
-		log_err(_("Can't restart PostgreSQL server\n"));
-		exit(ERR_NO_RESTART);
-	}*/
 	log_notice(_("%s: creating trigger file\n"), progname);
-	if (!create_recovery_file(data_dir, options.trigger_file)) {
+	if (!create_trigger_file(options.trigger_file)) {
 		exit(ERR_BAD_CONFIG);
 	}
 
@@ -1781,7 +1767,7 @@ create_trigger_file(const char *trigger_file_path)
 	FILE		*trigger_file;
 
 	trigger_file = fopen(trigger_file_path, "w");
-	if (recovery_file == NULL)
+	if (trigger_file == NULL)
 	{
 		log_err(_("could not create trigger file, it could be necessary to create it manually\n"));
 		return false;

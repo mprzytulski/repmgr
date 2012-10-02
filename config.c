@@ -129,7 +129,7 @@ parse_config(const char *config_file, t_configuration_options *options)
 	
 	if (strnlen(options->pg_ctl_command, MAXLEN)==0)
 	{
-		options->pg_ctl_command = "pg_ctl -D %s";
+		//sprintf(options->pg_ctl_command, "pg_ctl -D \%s");
 	}
 	
 
