@@ -54,6 +54,7 @@ typedef struct
 	char host[MAXLEN];
 	char username[MAXLEN];
 	char dest_dir[MAXFILENAME];
+	char config_dir[MAXFILENAME];
 	char config_file[MAXFILENAME];
 	char remote_user[MAXLEN];
 	char wal_keep_segments[MAXLEN];

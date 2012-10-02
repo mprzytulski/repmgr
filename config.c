@@ -41,6 +41,9 @@ parse_config(const char *config_file, t_configuration_options *options)
 	memset(options->promote_command, 0, sizeof(options->promote_command));
 	memset(options->follow_command, 0, sizeof(options->follow_command));
 	memset(options->rsync_options, 0, sizeof(options->rsync_options));
+	memset(options->init_options, 0, sizeof(options->init_options));
+	memset(options->pg_ctl_command, 0, sizeof(options->pg_ctl_command));
+	memset(options->trigger_file, 0, sizeof(options->trigger_file));
 
 	/* if nothing has been provided defaults to 60 */
 	options->master_response_timeout = 60;
@@ -78,6 +81,12 @@ parse_config(const char *config_file, t_configuration_options *options)
 			strncpy (options->conninfo, value, MAXLEN);
 		else if (strcmp(name, "rsync_options") == 0)
 			strncpy (options->rsync_options, value, QUERY_STR_LEN);
+		else if (strcmp(name, "init_options") == 0)
+			strncpy (options->init_options, value, QUERY_STR_LEN);
+		else if (strcmp(name, "pg_ctl_command") == 0)
+			strncpy (options->pg_ctl_command, value, QUERY_STR_LEN);
+		else if (strcmp(name, "trigger_file") == 0)
+			strncpy (options->trigger_file, value, QUERY_STR_LEN);
 		else if (strcmp(name, "loglevel") == 0)
 			strncpy (options->loglevel, value, MAXLEN);
 		else if (strcmp(name, "logfacility") == 0)
@@ -117,6 +126,12 @@ parse_config(const char *config_file, t_configuration_options *options)
 
 	/* Close file */
 	fclose (fp);
+	
+	if (strnlen(options->pg_ctl_command, MAXLEN)==0)
+	{
+		options->pg_ctl_command = "pg_ctl -D %s";
+	}
+	
 
 	/* Check config settings */
 	if (strnlen(options->cluster_name, MAXLEN)==0)
@@ -283,6 +298,9 @@ reload_configuration(char *config_file, t_configuration_options *orig_options)
 	strcpy(orig_options->promote_command, new_options.promote_command);
 	strcpy(orig_options->follow_command, new_options.follow_command);
 	strcpy(orig_options->rsync_options, new_options.rsync_options);
+	strcpy(orig_options->init_options, new_options.init_options);
+	strcpy(orig_options->pg_ctl_command, new_options.pg_ctl_command);
+	strcpy(orig_options->trigger_file, new_options.trigger_file);
 	orig_options->master_response_timeout = new_options.master_response_timeout;
 	orig_options->reconnect_attempts = new_options.reconnect_attempts;
 	orig_options->reconnect_intvl = new_options.reconnect_intvl;

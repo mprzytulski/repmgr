@@ -53,7 +53,7 @@
 #define CLUSTER_SHOW     7
 #define CLUSTER_CLEANUP  8
 
-static bool create_recovery_file(const char *data_dir);
+static bool create_recovery_file(const char *data_dir, const char *trigger_file);
 static int test_ssh_connection(char *host, char *remote_user);
 static int	copy_remote_files(char *host, char *remote_user, char *remote_path,
                              char *local_path, bool is_directory);
@@ -101,6 +101,7 @@ main(int argc, char **argv)
 		{"port", required_argument, NULL, 'p'},
 		{"username", required_argument, NULL, 'U'},
 		{"dest-dir", required_argument, NULL, 'D'},
+		{"config-dir", required_argument, NULL, 'C'},
 		{"local-port", required_argument, NULL, 'l'},
 		{"config-file", required_argument, NULL, 'f'},
 		{"remote-user", required_argument, NULL, 'R'},
@@ -150,6 +151,9 @@ main(int argc, char **argv)
 			break;
 		case 'U':
 			strncpy(runtime_options.username, optarg, MAXLEN);
+			break;
+		case 'C':
+			strncpy(runtime_options.config_dir, optarg, MAXFILENAME);
 			break;
 		case 'D':
 			strncpy(runtime_options.dest_dir, optarg, MAXFILENAME);
@@ -1209,7 +1213,7 @@ stop_backup:
 	}
 
 	/* Finally, write the recovery.conf file */
-	create_recovery_file(local_data_directory);
+	create_recovery_file(local_data_directory, options.trigger_file);
 
 	/*
 	 * We don't start the service yet because we still may want to
@@ -1447,7 +1451,7 @@ do_standby_follow(void)
 	PQfinish(conn);
 
 	/* write the recovery.conf file */
-	if (!create_recovery_file(data_dir))
+	if (!create_recovery_file(data_dir, options.trigger_file))
 		exit(ERR_BAD_CONFIG);
 
 	/* Finally, restart the service */
@@ -1541,7 +1545,7 @@ do_witness_create(void)
 
 	/* Create the cluster for witness */
 	/* We assume the pg_ctl script is in the PATH */
-	sprintf(script, "pg_ctl -D %s init -o \"-W\"", runtime_options.dest_dir);
+	sprintf(script, "pg_ctl -D %s init -o \"-W %s\"", runtime_options.dest_dir, options.init_options);
 	log_info("Initialize cluster for witness: %s.\n", script);
 
 	r = system(script);
@@ -1693,6 +1697,7 @@ help(const char *progname)
 	printf(_("	-U, --username=USERNAME	   database user name to connect as\n"));
 	printf(_("\nConfiguration options:\n"));
 	printf(_("	-D, --data-dir=DIR		   local directory where the files will be copied to\n"));
+	printf(_("	-C, --config-dir=DIR	   local directory where the configuration files will be copied to\n"));
 	printf(_("	-l, --local-port=PORT      standby or witness server local port\n"));
 	printf(_("	-f, --config_file=PATH	   path to the configuration file\n"));
 	printf(_("	-R, --remote-user=USERNAME database server username for rsync\n"));
@@ -1719,7 +1724,7 @@ help(const char *progname)
  * Creates a recovery file for a standby.
  */
 static bool
-create_recovery_file(const char *data_dir)
+create_recovery_file(const char *data_dir, const char *trigger_file)
 {
 	FILE		*recovery_file;
 	char		recovery_file_path[MAXLEN];
@@ -1735,6 +1740,14 @@ create_recovery_file(const char *data_dir)
 	}
 
 	maxlen_snprintf(line, "standby_mode = 'on'\n");
+	if (fputs(line, recovery_file) == EOF)
+	{
+		log_err(_("recovery file could not be written, it could be necessary to create it manually\n"));
+		fclose(recovery_file);
+		return false;
+	}
+	
+	maxlen_snprintf(line, "trigger_file = '%s'\n", trigger_file);
 	if (fputs(line, recovery_file) == EOF)
 	{
 		log_err(_("recovery file could not be written, it could be necessary to create it manually\n"));

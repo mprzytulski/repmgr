@@ -36,6 +36,9 @@ typedef struct
 	char loglevel[MAXLEN];
 	char logfacility[MAXLEN];
 	char rsync_options[QUERY_STR_LEN];
+	char init_options[QUERY_STR_LEN];
+	char pg_ctl_command[QUERY_STR_LEN];
+	char trigger_file[QUERY_STR_LEN];
 	int  master_response_timeout;
 	int  reconnect_attempts;
 	int  reconnect_intvl;
